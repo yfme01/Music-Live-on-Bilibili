@@ -100,7 +100,7 @@ def get_download_url(s, t, user, song = "nothing"):
     if(clean_files()):  #检查空间是否在设定值以内，并自动删除多余视频缓存
         send_dm_long('Server存储空间已爆炸，请联系up')
         return
-    if user != 'yfme01':
+    if ((user != 'yfme01') and (user != '阿暖暖吖')):
         if t == 'id' and bool(int(config['gift'])):   #检查送过的礼物数量
             if check_coin(user, 100) == False:
                 send_dm_long('用户'+user+'赠送的瓜子不够点歌哦,还差'+str(100-get_coin(user))+'瓜子的礼物')
@@ -198,12 +198,15 @@ def playlist_download(id,user):
     f = urllib.request.urlopen(download_api_url + "?%s" % params,timeout=3)   #设定获取的网址
     try:
         playlist = json.loads(f.read().decode('utf-8'))  #获取结果，并反序化
-        if len(playlist['playlist']['tracks'])*100 > get_coin(user) and bool(int(config['gift'])):
-            send_dm_long('用户'+user+'赠送的瓜子不够点'+str(len(playlist['playlist']['tracks']))+
-            '首歌哦,还差'+str(len(playlist['playlist']['tracks'])*100-get_coin(user))+'瓜子的礼物')
-            return
+        if ((user != 'yfme01') and (user != '阿暖暖吖')):
+            if len(playlist['playlist']['tracks'])*100 > get_coin(user) and bool(int(config['gift'])):
+                send_dm_long('用户'+user+'赠送的瓜子不够点'+str(len(playlist['playlist']['tracks']))+
+                '首歌哦,还差'+str(len(playlist['playlist']['tracks'])*100-get_coin(user))+'瓜子的礼物')
+                return
+            else:
+                send_dm_long('正在下载歌单：'+playlist['playlist']['name']+'，共'+str(len(playlist['playlist']['tracks']))+'首')
         else:
-            send_dm_long('正在下载歌单：'+playlist['playlist']['name']+'，共'+str(len(playlist['playlist']['tracks']))+'首')
+                send_dm_long('正在下载歌单：'+playlist['playlist']['name']+'，共'+str(len(playlist['playlist']['tracks']))+'首')
     except Exception as e:  #防炸
         print('shit(playlist)')
         print(e)
@@ -218,44 +221,45 @@ def download_av(video_url,user):
     if(clean_files()):  #检查空间是否在设定值以内，并自动删除多余视频缓存
         send_dm_long('树莓存储空间已爆炸，请联系up')
         return
-    if check_coin(user, 500) == False and bool(int(config['gift'])):   #扣掉瓜子数
-        send_dm_long('用户'+user+'赠送的瓜子不够点视频哦,还差'+str(500-get_coin(user))+'瓜子的礼物')
-        return
-    try:
-        v_format = 'flv'
-        print('[log]downloading bilibili video:'+str(video_url))
-        video_info = json.loads(os.popen('you-get '+video_url+' --json').read())    #获取视频标题，标题错误则说明点播参数不对，跳到except
-        video_title = video_info['title']   #获取标题
-        send_dm_long('正在下载'+video_title)
-        #send_dm('注意，视频下载十分费时，请耐心等待')
-        filename = str(time.mktime(datetime.datetime.now().timetuple()))    #用时间戳设定文件名
-        os.system('you-get '+video_url+' -o '+path+'/resource/playlist -O '+filename+'rendering1')  #下载视频文件
-        print('you-get '+video_url+' -o '+path+'/resource/playlist -O '+filename+'rendering1')
-        if(os.path.isfile(path+'/resource/playlist/'+filename+'rendering1.flv')):   #判断视频格式
+    if ((user != 'yfme01') and (user != '阿暖暖吖')):
+        if check_coin(user, 500) == False and bool(int(config['gift'])):   #扣掉瓜子数
+            send_dm_long('用户'+user+'赠送的瓜子不够点视频哦,还差'+str(500-get_coin(user))+'瓜子的礼物')
+            return
+        try:
             v_format = 'flv'
-        elif(os.path.isfile(path+'/resource/playlist/'+filename+'rendering1.mp4')):
-            v_format = 'mp4'
-        else:
-            send_dm_long('视频'+video_title+'下载失败，请重试')
+            print('[log]downloading bilibili video:'+str(video_url))
+            video_info = json.loads(os.popen('you-get '+video_url+' --json').read())    #获取视频标题，标题错误则说明点播参数不对，跳到except
+            video_title = video_info['title']   #获取标题
+            send_dm_long('正在下载'+video_title)
+            #send_dm('注意，视频下载十分费时，请耐心等待')
+            filename = str(time.mktime(datetime.datetime.now().timetuple()))    #用时间戳设定文件名
+            os.system('you-get '+video_url+' -o '+path+'/resource/playlist -O '+filename+'rendering1')  #下载视频文件
+            print('you-get '+video_url+' -o '+path+'/resource/playlist -O '+filename+'rendering1')
+            if(os.path.isfile(path+'/resource/playlist/'+filename+'rendering1.flv')):   #判断视频格式
+                v_format = 'flv'
+            elif(os.path.isfile(path+'/resource/playlist/'+filename+'rendering1.mp4')):
+                v_format = 'mp4'
+            else:
+                send_dm_long('视频'+video_title+'下载失败，请重试')
+                if bool(int(config['gift'])):
+                    give_coin(user,500)
+                return
+            service.AssMaker.make_ass(filename+'ok','点播人：'+user+"\\N视频："+video_title+"\\N"+video_url,path)  #生成字幕
+            service.AssMaker.make_info(filename+'ok','视频：'+video_title+",点播人："+user,path)   #生成介绍信息，用来查询
+            send_dm_long('视频'+video_title+'下载完成，等待渲染')
+            while (encode_lock):    #渲染锁，如果现在有渲染任务，则无限循环等待
+                time.sleep(1)   #等待
+            encode_lock = True  #进入渲染，加上渲染锁，防止其他视频一起渲染
+            send_dm_long('视频'+video_title+'正在渲染')
+            os.system('ffmpeg -threads 1 -i "'+path+'/resource/playlist/'+filename+'rendering1.'+v_format+'" -aspect 16:9 -vf "scale=1280:720, ass='+path+"/resource/playlist/"+filename+'ok.ass'+'" -c:v libx264 -strict -2 -preset ultrafast -maxrate '+config['rtmp']['bitrate']+'k -tune fastdecode -acodec aac -b:a 192k "'+path+'/resource/playlist/'+filename+'rendering.flv"')
+            encode_lock = False #关闭渲染锁，以便其他任务继续渲染
+            del_file(filename+'rendering1.'+v_format)   #删除渲染所用的原文件
+            os.rename(path+'/resource/playlist/'+filename+'rendering.flv',path+'/resource/playlist/'+filename+'ok.flv') #重命名文件，标记为渲染完毕（ok）
+            send_dm_long('视频'+video_title+'渲染完毕，已加入播放队列')
+        except: #报错提示，一般只会出现在获取标题失败时出现，就是点播参数不对
+            send_dm_long('出错了：请检查命令或重试')
             if bool(int(config['gift'])):
                 give_coin(user,500)
-            return
-        service.AssMaker.make_ass(filename+'ok','点播人：'+user+"\\N视频："+video_title+"\\N"+video_url,path)  #生成字幕
-        service.AssMaker.make_info(filename+'ok','视频：'+video_title+",点播人："+user,path)   #生成介绍信息，用来查询
-        send_dm_long('视频'+video_title+'下载完成，等待渲染')
-        while (encode_lock):    #渲染锁，如果现在有渲染任务，则无限循环等待
-            time.sleep(1)   #等待
-        encode_lock = True  #进入渲染，加上渲染锁，防止其他视频一起渲染
-        send_dm_long('视频'+video_title+'正在渲染')
-        os.system('ffmpeg -threads 1 -i "'+path+'/resource/playlist/'+filename+'rendering1.'+v_format+'" -aspect 16:9 -vf "scale=1280:720, ass='+path+"/resource/playlist/"+filename+'ok.ass'+'" -c:v libx264 -strict -2 -preset ultrafast -maxrate '+config['rtmp']['bitrate']+'k -tune fastdecode -acodec aac -b:a 192k "'+path+'/resource/playlist/'+filename+'rendering.flv"')
-        encode_lock = False #关闭渲染锁，以便其他任务继续渲染
-        del_file(filename+'rendering1.'+v_format)   #删除渲染所用的原文件
-        os.rename(path+'/resource/playlist/'+filename+'rendering.flv',path+'/resource/playlist/'+filename+'ok.flv') #重命名文件，标记为渲染完毕（ok）
-        send_dm_long('视频'+video_title+'渲染完毕，已加入播放队列')
-    except: #报错提示，一般只会出现在获取标题失败时出现，就是点播参数不对
-        send_dm_long('出错了：请检查命令或重试')
-        if bool(int(config['gift'])):
-            give_coin(user,500)
 
 #搜索歌曲并下载
 def search_song(s,user):
@@ -332,10 +336,11 @@ def give_coin(user, give_sum):
         print('create error')
 
 def check_night():
-    print(time.localtime()[3])
-    if (time.localtime()[3] >= 22 or time.localtime()[3] <= 5) and config['nightvideo']['use']:
-        send_dm_long('现在是晚间专场哦~命令无效')
-        return True
+    # print(time.localtime()[3])
+    # if (time.localtime()[3] >= 22 or time.localtime()[3] <= 5) and config['nightvideo']['use']:
+    #     send_dm_long('现在是晚间专场哦~命令无效')
+    #     return True
+    return False
 
 #切歌请求次数统计
 jump_to_next_counter = 0
