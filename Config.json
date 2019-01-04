@@ -1,0 +1,20 @@
+{
+	"path": "/home/ubuntu/Music-Live-on-Bilibili",
+	"musicapi": "https://qq.papapoi.com/163music/",
+	"freespace": "15360",
+	"gift": "1",
+	"rtmp": {
+		"url": "",
+		"code": "?streamname=live_27080402_2241876&key=c3db7f0c5527beddff61c92c369cb96e",
+		"bitrate": "192"
+	},
+	"danmu": {
+		"cookie": "",
+		"token": "",
+		"roomid": "8712608",
+		"size": "20"
+	},
+	"nightvideo": {
+		"use": "0"
+	}
+}
